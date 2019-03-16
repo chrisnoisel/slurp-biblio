@@ -11,6 +11,11 @@ TERM_NEW_ARTWORK="Identifiant pérenne de la notice"
 CSV_SEPARATOR1=$'\t'
 CSV_SEPARATOR2='|'
 
+function usage
+{
+	echo -e "usage:\n\t"$(basename "$0")" <sudoc_search_export_file>"
+}
+
 function sudoc_simple_request
 {
 	curl -sL "$1" \
@@ -53,7 +58,12 @@ function sudoc_infos_from_url
 	rm "$tmp_cookie"
 }
 
-# $1 : export sudoc file
+if [ -z "$1" ]
+then
+	echo "error: missing argument" >&2
+	usage
+	exit 1
+fi
 
 data=$({
 	sed -E 's/^ +//' "$1"

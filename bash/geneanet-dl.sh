@@ -1,5 +1,7 @@
 #!/bin/bash
-# curl, wget, montage
+# curl, montage
+
+#example : https://en.geneanet.org/archives/registres/view/12949/18?idcollection=12949&legacy_script=/archives/registres/view/index.php&page=18
 
 BASE_URL="https://en.geneanet.org"
 
@@ -13,18 +15,22 @@ function strip_xml
 	grep "$1" | cut -d = -f 2- | sed -E 's/^"(.*)"$/\1/g'
 }
 
-ox=2500
-oy=2000
-
 if [ -z "$1" ]
 then
 	echo 'error: missing url' >&2
 	usage
 	exit 1
+elif [ -z "$(which montage)" ]
+then
+	echo "montage command not found, ImageMagick is required"
+	exit 1
+elif [ -z "$(which curl)" ]
+then
+	echo "curl command not found"
+	exit 1
 fi
 
 URL=$1
-#example : https://en.geneanet.org/archives/registres/view/12949/18?idcollection=12949&legacy_script=/archives/registres/view/index.php&page=18
 
 # clean up
 collection_id=0
