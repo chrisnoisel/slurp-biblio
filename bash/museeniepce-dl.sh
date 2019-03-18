@@ -1,6 +1,9 @@
 #!/bin/bash
 # http://www.open-museeniepce.com
 
+# note 
+# watermarker is applied with a 'screen' blend
+
 watermark='iVBORw0KGgoAAAANSUhEUgAAAcAAAABJCAAAAACPhqkLAAANOUlEQVR42u2a/WvbWLrHPz1zRldo
 NVrVFVojjPE1oQQTShlKKGVYlrI/3D/7Ukpvb2/IDSFkQzAmeLwer8fXo1U1Wo1Gq7k/6NUvcpwm
 250FfaElUY6el/M853k7esRnxrNuLL0396MhZCLi5JZFyis9EaNLfjXYlLr9Ipa8W96LqvzMWuhd
@@ -68,7 +71,7 @@ function usage
 	echo -e "usage :" >&2
 	echo -e "\t"$(basename "$0")" <page_url>" >&2
 	echo -e "\t"$(basename "$0")" <watermarked_image_url>" >&2
-	echo -e "\t"$(basename "$0")" <watermark_image_file>" >&2
+	echo -e "\t"$(basename "$0")" <watermarked_image_file>" >&2
 }
 
 function base64_decode
@@ -84,45 +87,44 @@ function base64_decode
 
 function revert_watermark
 {
-	{
-		echo "$watermark" | base64_decode | convert "$1" -gravity South png:- -compose Minus_Src -composite miff:-
-		echo "$watermark" | base64_decode | convert png:- -channel RGB -negate miff:-
-	} | convert miff:- -gravity South -compose Divide_Src -composite png:"$2"
+	exec 3< <(echo "$watermark" | base64_decode)
+	exec 4< <(echo "$watermark" | base64_decode)
+	
+	convert png:- -gravity South png:fd:3 -compose Minus_Src -composite png:fd:4 -compose Color_Dodge -composite png:-
+	
+	exec 3<&-
+	exec 4<&-
 }
 
 if [ -z "$1" ]
 then
-	echo "error: missing argument"
+	echo "error: missing argument" >&2
 	usage
 	exit 1
 fi
 
-watermarked=""
-tmp_file=""
+output="/dev/stdout"
 
-if [ -n "$(echo $1 | grep http)" ]
+if [ -n "$2" ]
+then
+	output="$2"
+	echo "writing $output" >&2
+fi
+
+if [ -n "$(echo $1 | grep open-museeniepce.com)" ]
 then
 	# url
-	urlimg=""
+	urlimg="$1"
 	if [ -z "$(echo $1 | grep 'protectimage')" ]
 	then
-		urlimg=$(curl "$1" | grep og:image | grep -Eo 'http[^"]+' | sed -E 's/(&|\?)w=[0-9]+//')
-	else
-		urlimg="$1"
+		urlimg=$(curl -s "$1" | grep og:image | grep -Eo 'http[^"]+' | sed -E 's/(&|\?)w=[0-9]+//')
+		echo "image url is $urlimg" >&2
 	fi
 	
-	tmp_file=$(mktemp)
-	watermarked="$tmp_file"
-	curl -o "$tmp_file" "$urlimg"
+	curl -s "$urlimg" | revert_watermark > "$output"
 
 elif [ -e "$1" ]
 then
-	watermarked="$1"
+	revert_watermark < "$1" > "$output"
 fi
 
-revert_watermark "$watermarked" -
-
-if [ -n "$tmp_file" ]
-then
-	rm "$tmp_file"
-fi
