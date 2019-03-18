@@ -71,11 +71,22 @@ function usage
 	echo -e "\t"$(basename "$0")" <watermark_image_file>" >&2
 }
 
+function base64_decode
+{
+	if [ "$(uname)" == "Darwin" ]
+	then
+		# osx
+		base64 -D
+	else
+		base64 -d
+	fi
+}
+
 function revert_watermark
 {
 	{
-		echo "$watermark" | base64 -d | convert "$1" -gravity South png:- -compose Minus_Src -composite miff:-
-		echo "$watermark" | base64 -d | convert png:- -channel RGB -negate miff:-
+		echo "$watermark" | base64_decode | convert "$1" -gravity South png:- -compose Minus_Src -composite miff:-
+		echo "$watermark" | base64_decode | convert png:- -channel RGB -negate miff:-
 	} | convert miff:- -gravity South -compose Divide_Src -composite png:"$2"
 }
 
@@ -109,7 +120,7 @@ then
 	watermarked="$1"
 fi
 
-revert_watermark "$watermarked" /dev/stdout
+revert_watermark "$watermarked" -
 
 if [ -n "$tmp_file" ]
 then
