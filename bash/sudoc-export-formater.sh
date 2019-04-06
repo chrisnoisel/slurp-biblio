@@ -33,7 +33,7 @@ function sudoc_where_to_find
 	echo "$terms" | tr , $'\n' | while read term
 	do
 		# Yeah, shoulda use an XML parser, I know.
-		echo "$term|"$(echo "$xml" | grep "<psi:text>$term" | tr '>' $'\n' | grep -E ".</psi:text" | tail -n+2 | cut -d '<' -f 1 | paste -sd "$CSV_SEPARATOR2" -)
+		echo "$term|"$(echo "$xml" | grep "<psi:text>$term" | tr '>' $'\n' | grep -E ".</psi:text" | tail -n+2 | cut -d '<' -f 1 | sed 's/&#34;/"/g' | paste -sd "$CSV_SEPARATOR2" -)
 	done
 }
 
@@ -51,7 +51,7 @@ function sudoc_infos_from_url
 	sudoc_simple_request "http://www.sudoc.fr/$ppn" "$tmp_cookie" >> /dev/null
 	
 	# TODO : use https://www.sudoc.fr/services/multiwhere/20338489X
-	rcr=$(curl -sL "https://www.sudoc.fr/export/q=ppn&v=$ppn" | sed -E "s/</\\n/g" | grep '209A' -A 1 | tail -n 1 | cut -d '>' -f 2)
+	rcr=$(curl -sL "https://www.sudoc.fr/export/q=ppn&v=$ppn" | tr '<' $'\n' | grep '209A' -A 1 | tail -n 1 | cut -d '>' -f 2)
 	
 	sudoc_where_to_find "$tmp_cookie" "$rcr"
 
@@ -86,8 +86,9 @@ empty_counter=0
 last_field=""
 more_data=""
 echo -e "$terms"$'\n'"$terms_more_data" | paste -sd "$CSV_SEPARATOR1" -
-echo "$data" | while read line
+echo "$data" | while read line_raw
 do
+	line=$(echo "$line_raw" | tr -d $'\r')
 	if [ -z "$line" ]
 	then
 		empty_counter=$(( $empty_counter + 1 ))
@@ -106,7 +107,7 @@ do
 				do
 					echo $(echo "$more_data" | grep "$term" | cut -d '|' -f 2- | paste -sd "$CSV_SEPARATOR2" -)""
 				done
-			} | paste -sd "$CSV_SEPARATOR1"
+			} | paste -sd "$CSV_SEPARATOR1" -
 			
 			buf=""
 			more_data=""
