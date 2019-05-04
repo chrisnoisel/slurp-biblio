@@ -44,8 +44,6 @@ function getRegion
 	echo '['$sizew'x'$sizeh'+'$ox'+'$oy']'
 }
 
-https://basedescollections.musee-armee.fr/notice?id=h%3A%3Aark%3A%2F66008%2F2018820&posInSet=1&queryId=N-eff35ca4-1d3e-42bc-b0ba-9e9f9c65ae5a
-
 ark_long=$(echo "$1" | sed 's/%3A/:/g' | sed 's#%2F#/#g' | grep -Eo "ark:/[^.&]+")
 ark=$(echo "$ark_long" | cut -d '/' -f 1-3)
 
