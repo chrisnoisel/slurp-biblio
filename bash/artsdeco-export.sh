@@ -56,13 +56,13 @@ function read_data
 
 function get_page_csv
 {
-	idgabi=$(curl -sL "$1" | grep -Eo 'DKAJAX.get_documents_details\("[0-9_]+"\)' | grep -Eo '[0-9]+_[0-9]+')
-	dirtyxml=$(curl -sL "http://artsdecoratifs.e-sezhame.fr/search.php?action=ajax&method=get_documents_details&champsgabi=undefined&itype=Gabi&idgabi=$idgabi")
+	idgabi=$(curl -gsL "$1" | grep -Eo 'DKAJAX.get_documents_details\("[0-9_]+"\)' | grep -Eo '[0-9]+_[0-9]+')
+	dirtyxml=$(curl -gsL "http://artsdecoratifs.e-sezhame.fr/search.php?action=ajax&method=get_documents_details&champsgabi=undefined&itype=Gabi&idgabi=$idgabi")
 
 	url_image=$(echo "$dirtyxml" | grep -Eo 'img_url : "[^"]+' | tr -d '"' | cut -d ':' -f 2- | sed 's/^ //')
 	url_doc="http://artsdecoratifs.e-sezhame.fr/id_"$(echo $idgabi | cut -d '_' -f 2)".html"
 	data=$({
-		echo "$dirtyxml" | tr -d '\n\r\t' | grep -Eo '<tab>.+</tab>' | awk -v RS="<tr>" 'NR > 1 { print $0 }' | sed -E 's/<script>[^<]+<\/script>//g' | sed 's/<\/tr>.*$//' | separate_fields | separate_lines | strip_html_tags | final_clean
+		echo "$dirtyxml" | tr -d '\n\r\t' | grep -Eo '<tab>.+</tab>' | gawk -v RS="<tr>" 'NR > 1 { print $0 }' | sed -E 's/<script>[^<]+<\/script>//g' | sed 's/<\/tr>.*$//' | separate_fields | separate_lines | strip_html_tags | final_clean
 		echo -e "URL"$'\t'"$url_doc"
 		echo -e "URL_IMAGE"$'\t'"$url_image"
 	})
@@ -84,13 +84,13 @@ function enhance_search
 
 function get_urls_from_searchpage
 {
-	curl -sL "$1" | grep 'class="url"' | grep -Eo 'search.php[^<]+' | awk '{ print "'"$BASE_URL"'/"$0 }'
+	curl -gsL "$1" | grep 'class="url"' | grep -Eo 'search.php[^<]+' | gawk '{ print "'"$BASE_URL"'/"$0 }'
 }
 
 function run_search
 {
-	html=$(curl -sL "$1")
-	max_page=$(echo "$html" | tr -d '\n\r\t' | awk -v RS='pagination_top[^>]+> *' 'NR == 2' | awk -v RS='</div>' 'NR == 1' | sed 's#</a>#\'$'\n''#g' | grep -Ev "^ *$" | grep -v Suivant | tail -n 1 | grep -Eo '(&|\?|&amp;)page=[0-9]+' | cut -d = -f 2)
+	html=$(curl -gsL "$1")
+	max_page=$(echo "$html" | tr -d '\n\r\t' | gawk -v RS='pagination_top[^>]+> *' 'NR == 2' | gawk -v RS='</div>' 'NR == 1' | sed 's#</a>#\'$'\n''#g' | grep -Ev "^ *$" | grep -v Suivant | tail -n 1 | grep -Eo '(&|\?|&amp;)page=[0-9]+' | cut -d = -f 2)
 	if [ -z "$max_page" ]
 	then
 		max_page=1
